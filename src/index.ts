@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 /** エントリポイント。 */
+import { assertNodeVersion } from './preflight.js';
 import { createApp } from './server/app.js';
 import { loadConfig } from './config.js';
+
+assertNodeVersion();
 
 const config = loadConfig();
 const app = createApp(config);

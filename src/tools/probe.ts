@@ -14,6 +14,7 @@
  * このシステムは「実機が申告した情報だけ」で動くので、
  * 実機での運用は必ずここから始める。
  */
+import { assertNodeVersion } from '../preflight.js';
 import { writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { Gphoto2Cli, explainGphoto2Error } from '../camera/gphoto2/cli.js';
@@ -21,6 +22,8 @@ import { parseAutoDetect, parseConfigList } from '../camera/gphoto2/parse.js';
 import { resolveMapping } from '../camera/gphoto2/mapping.js';
 import { FIELD_LABELS } from '../domain/labels.js';
 import { loadConfig } from '../config.js';
+
+assertNodeVersion();
 
 function arg(name: string): string | undefined {
   const index = process.argv.indexOf(`--${name}`);

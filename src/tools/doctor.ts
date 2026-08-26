@@ -11,12 +11,15 @@
  * それらを 1 コマンドで潰し、失敗したものには対処法を添えて出す。
  * probe が「何が読めるか」を調べるのに対し、doctor は「設計の前提が成り立つか」を調べる。
  */
+import { assertNodeVersion } from '../preflight.js';
 import { Gphoto2Cli, explainGphoto2Error, type Gphoto2Runner } from '../camera/gphoto2/cli.js';
 import { parseAutoDetect, parseConfigList } from '../camera/gphoto2/parse.js';
 import { encodeSet, resolveMapping, type ResolvedField } from '../camera/gphoto2/mapping.js';
 import { FIELD_LABELS } from '../domain/labels.js';
 import { adviseSettings } from '../ai/index.js';
 import { loadConfig } from '../config.js';
+
+assertNodeVersion();
 
 type Status = 'ok' | 'ng' | 'warn' | 'skip';
 

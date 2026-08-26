@@ -74,7 +74,17 @@ API が落ちていても、電波が届かなくても、提案は必ず返り�
 
 ### 実機に接続する（USB）
 
+以下は **カメラを USB で挿したブリッジ機（Linux 推奨）で、
+clone したディレクトリの中** で実行します。スマホ側では実行しません。
+
 ```bash
+# Node.js 22 以上が必要（Ubuntu 24.04 / Raspberry Pi OS の既定は 18 系）
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt install -y nodejs
+
+git clone https://github.com/YutoTsukuda/camera-control.git
+cd camera-control
+npm install
+
 sudo apt install gphoto2          # macOS は brew install gphoto2
 
 # Linux デスクトップでは自動マウントを止める（最頻出のつまずき）

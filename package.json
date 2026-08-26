@@ -5,7 +5,7 @@
   "description": "FUJIFILM X100VI の静止画撮影設定を、スマートフォンからAIで自動設定するシステム",
   "type": "module",
   "engines": {
-    "node": ">=22.6.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

@@ -6,7 +6,23 @@
 
 ---
 
+## どこで実行するか
+
+**カメラを USB で挿したブリッジ機の、リポジトリを clone したディレクトリの中**です。
+スマホ側では実行しません（スマホはブラウザで使うだけです）。
+
+```bash
+git clone https://github.com/YutoTsukuda/camera-control.git
+cd camera-control
+npm install
+```
+
+準備の詳細（Node 22 の導入、gphoto2 の導入、gvfs の停止）は
+[usb-setup.md](usb-setup.md) を参照してください。
+
 ## 進め方
+
+カメラを USB で接続した状態で、`camera-control` ディレクトリの中から:
 
 ```bash
 npm run probe     # ① カメラが何を公開しているか調べる（結果を保存）

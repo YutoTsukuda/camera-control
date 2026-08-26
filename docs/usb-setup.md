@@ -26,7 +26,31 @@ Raspberry Pi にカメラをUSBで繋いでカメラバッグに入れておく�
 
 ---
 
-## 1. gphoto2 を入れる
+## 1. ブリッジ機にリポジトリと Node を用意する
+
+**すべてのコマンドは、カメラを USB で挿したブリッジ機の、
+リポジトリを clone したディレクトリの中で実行します。**
+スマホ側や別のマシンでは実行しません。
+
+```bash
+# Node.js 22 以上（Ubuntu 24.04 や Raspberry Pi OS の既定は 18 系なので入れ替えが要る）
+node -v                                    # v22 以上なら次へ
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# リポジトリを取得
+git clone https://github.com/YutoTsukuda/camera-control.git
+cd camera-control
+npm install
+```
+
+以降のコマンドはすべて、この `camera-control` ディレクトリの中で実行します。
+
+> Node の版が古いままだと分かりにくい構文エラーで落ちるため、
+> `npm start` / `npm run probe` / `npm run doctor` は起動時に版を確認し、
+> 足りなければ入れ替え手順を出して止まります。
+
+## 2. gphoto2 を入れる
 
 ```bash
 # Debian / Ubuntu / Raspberry Pi OS
@@ -48,7 +72,7 @@ gphoto2 --version
 > X100VI が明示登録されるのは新しい libgphoto2 からですが、
 > 汎用エントリ経由で動作します。実際に検出できるかは次の手順で確認します。
 
-## 2. カメラ側を USB テザー撮影にする
+## 3. カメラ側を USB テザー撮影にする
 
 カメラのメニューで:
 
@@ -59,7 +83,7 @@ gphoto2 --version
 「USB カードリーダー」になっているとカメラとして認識されません。
 そのうえで USB ケーブルで繋ぎ、カメラの電源を入れます。
 
-## 3. Linux の自動マウントを止める（最重要）
+## 4. Linux の自動マウントを止める（最重要）
 
 デスクトップ環境の Linux では、カメラを挿すと **gvfs が先に掴んでしまい**、
 gphoto2 が `Could not claim the USB device` で失敗します。
@@ -90,11 +114,12 @@ lsusb | grep -i fuji
 sudo usermod -aG plugdev "$USER"   # 再ログインが必要
 ```
 
-## 4. 実機を調べる（ここが本題）
+## 5. 実機を調べる（ここが本題）
 
 ```bash
-npm install
-npm run probe
+# カメラを USB で挿した状態で、camera-control ディレクトリの中で
+npm run probe     # カメラが何を公開しているか調べる
+npm run doctor    # 設計の前提が成り立つか健診する
 ```
 
 `probe` は次を行います。
@@ -140,7 +165,7 @@ npm run probe
 カメラ側に別名で存在する場合は、`config/gphoto2-mapping-raw.txt` から名前を探し、
 `src/camera/gphoto2/mapping.ts` の `candidates` に追加してください。
 
-## 5. 起動する
+## 6. 起動する
 
 ```bash
 export CAMERA_TRANSPORT=gphoto2
@@ -153,7 +178,7 @@ npm start
 スマホから `http://<ブリッジ機のIP>:8080/?token=<ACCESS_TOKENの値>` を開きます。
 トークンは端末に保存されるので、次回以降は URL だけで構いません。
 
-## 6. 常駐させる（systemd）
+## 7. 常駐させる（systemd）
 
 `/etc/systemd/system/x100vi-assistant.service`:
 
