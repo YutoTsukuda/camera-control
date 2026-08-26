@@ -1,0 +1,63 @@
+{
+  "_comment": [
+    "富士フイルム独自 PTP プロパティの上書き定義。",
+    "このファイルを config/fuji-properties.json にコピーし、",
+    "`npm run discover -- --host 192.168.0.1` の結果をもとに実機の値へ直してください。",
+    "既定表（src/camera/ptpip/fujiProps.ts）のうち、ここに書いたフィールドだけが差し替わります。",
+    "",
+    "dataType は PTP のデータ型コード:",
+    "  1=INT8, 2=UINT8, 3=INT16, 4=UINT16, 5=INT32, 6=UINT32",
+    "confidence に 'community' 以上を指定すると、実機未検証スキップの対象から外れます。"
+  ],
+
+  "filmSimulation": {
+    "code": 53249,
+    "dataType": 4,
+    "confidence": "community",
+    "note": "0xD001。実機の discover 結果で確認した値に直すこと。",
+    "values": {
+      "PROVIA_STD": 1,
+      "VELVIA_VIVID": 2,
+      "ASTIA_SOFT": 3,
+      "MONOCHROME": 4,
+      "SEPIA": 5,
+      "PRO_NEG_HI": 6,
+      "PRO_NEG_STD": 7,
+      "MONOCHROME_YE": 8,
+      "MONOCHROME_R": 9,
+      "MONOCHROME_G": 10,
+      "CLASSIC_CHROME": 11,
+      "ACROS": 12,
+      "ACROS_YE": 13,
+      "ACROS_R": 14,
+      "ACROS_G": 15,
+      "ETERNA_CINEMA": 16,
+      "CLASSIC_NEG": 17,
+      "ETERNA_BLEACH_BYPASS": 18,
+      "NOSTALGIC_NEG": 19,
+      "REALA_ACE": 20
+    }
+  },
+
+  "whiteBalance": {
+    "code": 20485,
+    "dataType": 4,
+    "confidence": "community",
+    "note": "0x5005。日陰・水中・色温度指定はベンダ定義値（0x8000〜）が必要。",
+    "values": {
+      "AUTO": 2,
+      "AUTO_WHITE_PRIORITY": 2,
+      "AUTO_AMBIENCE_PRIORITY": 2,
+      "DAYLIGHT": 4,
+      "SHADE": 32769,
+      "FLUORESCENT_1": 5,
+      "FLUORESCENT_2": 5,
+      "FLUORESCENT_3": 5,
+      "INCANDESCENT": 6,
+      "KELVIN": 32770,
+      "CUSTOM_1": 1,
+      "CUSTOM_2": 1,
+      "CUSTOM_3": 1
+    }
+  }
+}

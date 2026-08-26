@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111315">
+<title>X100VI AI 撮影設定</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>X100VI <span>AI 撮影設定</span></h1>
+  <button id="connectBtn" class="chip chip--action" type="button">接続</button>
+  <span id="statusBadge" class="badge badge--off">未接続</span>
+</header>
+
+<main>
+  <section class="card">
+    <h2>1. シーンを撮る</h2>
+    <p class="hint">これから撮る場所にスマホを向けて1枚。光の向きと明るさをAIが読み取ります。</p>
+    <label class="filebtn">
+      <input id="photoInput" type="file" accept="image/*" capture="environment" hidden>
+      <span>📷 写真を撮る / 選ぶ</span>
+    </label>
+    <div id="previewWrap" class="preview" hidden>
+      <img id="preview" alt="撮影シーンのプレビュー">
+      <button id="clearPhoto" class="chip chip--ghost" type="button">写真を外す</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2. 撮りたいものを伝える</h2>
+
+    <div class="field">
+      <span class="field__label">被写体</span>
+      <div class="chips" data-group="subject">
+        <button class="chip" data-value="PERSON" type="button">人物</button>
+        <button class="chip" data-value="LANDSCAPE" type="button">風景</button>
+        <button class="chip" data-value="STREET" type="button">スナップ</button>
+        <button class="chip" data-value="FOOD" type="button">料理</button>
+        <button class="chip" data-value="ANIMAL" type="button">動物</button>
+        <button class="chip" data-value="ARCHITECTURE" type="button">建築</button>
+        <button class="chip" data-value="NIGHT" type="button">夜景</button>
+        <button class="chip" data-value="SPORTS" type="button">動体</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="field__label">優先したいこと</span>
+      <div class="chips" data-group="priority">
+        <button class="chip" data-value="BOKEH" type="button">背景をぼかす</button>
+        <button class="chip" data-value="SHARPNESS" type="button">隅までシャープ</button>
+        <button class="chip" data-value="FREEZE_MOTION" type="button">動きを止める</button>
+        <button class="chip" data-value="LOW_NOISE" type="button">ノイズを抑える</button>
+        <button class="chip" data-value="MOOD" type="button">雰囲気重視</button>
+        <button class="chip" data-value="BALANCED" type="button">バランス</button>
+      </div>
+    </div>
+
+    <div class="field field--split">
+      <div>
+        <span class="field__label">被写体の動き</span>
+        <div class="chips" data-group="motion">
+          <button class="chip" data-value="STILL" type="button">静止</button>
+          <button class="chip" data-value="SLOW" type="button">歩く</button>
+          <button class="chip" data-value="FAST" type="button">走る</button>
+        </div>
+      </div>
+      <div>
+        <span class="field__label">保持</span>
+        <div class="chips" data-group="support">
+          <button class="chip" data-value="HANDHELD" type="button">手持ち</button>
+          <button class="chip" data-value="TRIPOD" type="button">三脚</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="field field--split">
+      <label class="toggle"><input id="wantRaw" type="checkbox"> RAWも記録</label>
+      <label class="toggle"><input id="monochrome" type="checkbox"> モノクロで撮る</label>
+    </div>
+
+    <div class="field">
+      <span class="field__label">ひとこと（任意）</span>
+      <input id="note" type="text" placeholder="例: 逆光の子どもを柔らかく、肌をきれいに">
+    </div>
+
+    <div class="field">
+      <span class="field__label">明るさ <small id="evLabel">カメラ／写真から自動</small></span>
+      <select id="sceneSelect">
+        <option value="">自動（測光値または写真から推定）</option>
+      </select>
+    </div>
+  </section>
+
+  <div class="actions">
+    <button id="adviseBtn" class="primary" type="button">AIに設定を提案してもらう</button>
+  </div>
+
+  <section id="proposal" class="card card--proposal" hidden>
+    <div class="source" id="proposalSource"></div>
+    <div class="exposure">
+      <div class="exposure__item"><b id="valAperture">–</b><span>絞り</span></div>
+      <div class="exposure__item"><b id="valShutter">–</b><span>SS</span></div>
+      <div class="exposure__item"><b id="valIso">–</b><span>ISO</span></div>
+      <div class="exposure__item"><b id="valComp">–</b><span>露出補正</span></div>
+    </div>
+    <p id="predicted" class="predicted"></p>
+    <p id="sceneAnalysis" class="analysis"></p>
+    <p id="rationale" class="rationale"></p>
+    <ul id="warnings" class="warnings"></ul>
+
+    <details id="correctionsBox">
+      <summary>システムが補正した内容 <span id="correctionCount"></span></summary>
+      <ul id="corrections" class="corrections"></ul>
+    </details>
+
+    <details>
+      <summary>提案された設定の全項目</summary>
+      <dl id="settingsList" class="settings"></dl>
+    </details>
+
+    <div class="actions actions--inline">
+      <button id="applyBtn" class="primary" type="button">カメラに適用</button>
+      <button id="captureBtn" class="chip chip--ghost" type="button">シャッターを切る</button>
+    </div>
+    <div id="applyResult" class="applyresult"></div>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>ログ</summary>
+      <pre id="log" class="log"></pre>
+    </details>
+  </section>
+</main>
+
+<div id="toast" class="toast" hidden></div>
+<script src="/app.js" type="module"></script>
+</body>
+</html>

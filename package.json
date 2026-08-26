@@ -1,0 +1,26 @@
+{
+  "name": "x100vi-ai-shooting-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "description": "FUJIFILM X100VI の静止画撮影設定を、スマートフォンからAIで自動設定するシステム",
+  "type": "module",
+  "engines": {
+    "node": ">=22.6.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/index.js",
+    "dev": "npm run build && node dist/src/index.js",
+    "test": "npm run build && node --test dist/test/*.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "discover": "npm run build && node dist/src/tools/discover.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0"
+  }
+}
