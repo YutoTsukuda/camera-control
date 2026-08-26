@@ -7,11 +7,15 @@ Claude が光を読み取って絞り・シャッター速度・ISO・フィル�
 Wi-Fi 経由でカメラに書き込みます。
 
 ```
-[スマホ PWA]  ──HTTP──▶  [ブリッジサーバ (Node)]  ──PTP/IP──▶  [X100VI]
+[スマホ PWA]  ──HTTP──▶  [ブリッジサーバ (Node)]  ──USB──▶  [X100VI]
   写真+意図                  ├─ Claude（シーン読解・絵作り）
   提案の確認                 ├─ 露出ソルバ（決定論的な計算）
   ワンタップ適用             └─ バリデータ（機種制約の解決）
 ```
+
+カメラとの接続は **USB（gphoto2）を推奨**します。無線の切断がそもそも起きず、
+プロパティ名も選択肢も実機が申告したものだけを使うため、推測が入りません。
+スマホ ↔ ブリッジ間は無線のままなので操作感は変わりません。
 
 ---
 
@@ -46,7 +50,7 @@ X100 シリーズのレンズシャッターは開放側ほど最高速が下が
 
 ```bash
 npm install
-npm test          # 75 テスト
+npm test          # 112 テスト
 npm run build
 npm start         # http://localhost:8080
 ```
@@ -64,28 +68,33 @@ npm start
 `ANTHROPIC_API_KEY` が未設定なら自動的にルールベース（オフライン）で動きます。
 API が落ちていても、電波が届かなくても、提案は必ず返ります。
 
-### 実機に接続する
+### 実機に接続する（USB）
 
 ```bash
-export CAMERA_TRANSPORT=ptpip
-export CAMERA_HOST=192.168.0.1
-npm start
+sudo apt install gphoto2          # macOS は brew install gphoto2
+
+# Linux デスクトップでは自動マウントを止める（最頻出のつまずき）
+systemctl --user stop gvfs-gphoto2-volume-monitor
+
+# カメラ側: 接続設定 → USB接続モード → USB テザー撮影
+# USBで繋いだ状態で、まず実機を調べる
+npm run probe
+
+# 照合結果を確認したら起動
+CAMERA_TRANSPORT=gphoto2 npm start
 ```
 
-設定の全項目は `.env.example` を参照してください。
-実機接続の手順とネットワーク構成は **[docs/hardware-setup.md](docs/hardware-setup.md)** に詳しく書いています。
+`npm run probe` はカメラが申告する設定ツリーを読み、
+どのフィールドがどの設定に解決できたか、列挙値がどの選択肢に照合されたかを
+1 件ずつ表示して `config/gphoto2-mapping.json` に保存します。
+**実機運用は必ずここから始めてください。**
 
-> **実機接続について（重要）**
-> PTP 標準プロパティ（絞り・SS・ISO・露出補正など）は公開仕様に基づいており確度が高い一方、
-> フィルムシミュレーションのような富士フイルム独自プロパティのコードは
-> コミュニティの解析に基づく推定値で、**実機検証が済んでいません**。
-> 既定では未検証プロパティの送信をスキップします。
-> `npm run discover -- --host 192.168.0.1` で実機の対応プロパティを一覧化し、
-> `config/fuji-properties.json` に正しい値を書いてから使ってください。
-> 詳細は [docs/protocol-notes.md](docs/protocol-notes.md)。
->
-> 公式の FUJIFILM Camera Remote SDK をラップした別プロセスへ委譲する
-> `sdk-bridge` 方式も用意しています。本番運用ではこちらが確実です。
+手順の詳細（権限、systemd での常駐、物理ダイヤルの制約、Windows での動かし方）は
+**[docs/usb-setup.md](docs/usb-setup.md)** にまとめています。
+
+> **X100VI が libgphoto2 の機種一覧に無くても動きます。**
+> `USB PTP Class Camera` という汎用エントリがあり、PTP クラスを名乗るカメラは
+> 機種登録なしで検出されます。実際に何が読めるかは `npm run probe` が教えてくれます。
 
 ---
 
@@ -117,15 +126,18 @@ src/
   camera/
     types.ts         アダプタ抽象
     mock.ts          モックカメラ（測光値・拒否・遅延を再現）
-    ptpip/           PTP/IP 実装（パケット層・オペレーション層・プロパティ表）
-    sdkBridge.ts     公式 SDK ブリッジへの委譲
+    gphoto2/         USB接続（推奨）。実機が申告した設定ツリーから解決する
+    ptpip/           Wi-Fi (PTP/IP)。接続手順が未完成
+    sdkBridge.ts     公式 SDK ブリッジへの委譲（Windows向け）
   server/app.ts      ブリッジサーバ（REST + SSE + 静的配信）
   web/               スマホ PWA（ビルド不要の素の ES モジュール）
-  tools/discover.ts  実機のプロパティ調査 CLI
+  tools/probe.ts     実機調査 CLI（USB / gphoto2）※ 実機運用はここから
+  tools/discover.ts  実機調査 CLI（Wi-Fi / PTP-IP）
 ```
 
+- [docs/usb-setup.md](docs/usb-setup.md) — **USB接続での実機セットアップ（推奨経路）**
 - [docs/architecture.md](docs/architecture.md) — 設計の意図と責務分担
-- [docs/hardware-setup.md](docs/hardware-setup.md) — 実機接続とネットワーク構成
+- [docs/hardware-setup.md](docs/hardware-setup.md) — ネットワーク構成と Wi-Fi 経路
 - [docs/protocol-notes.md](docs/protocol-notes.md) — PTP/IP と独自プロパティの確度
 - [docs/x100vi-reference.md](docs/x100vi-reference.md) — 実装が依拠する機種仕様
 
@@ -162,7 +174,12 @@ src/
 | レイヤー | 状態 |
 |---|---|
 | 露出ソルバ・バリデータ | 単体テスト済み（境界条件・冪等性・全組み合わせ走査） |
+| gphoto2 出力パーサ | 単体テスト済み。**出力書式は gphoto2 バイナリの書式文字列から確定**（版差による END 区切りの有無も両対応） |
+| gphoto2 マッピング・値照合 | 単体テスト済み（フィルムシミュレーション20種、ACROS と ACROS+R の取り違え防止を含む） |
+| gphoto2 アダプタ | 実行器を差し替えて検証済み（一括適用、失敗時の個別再試行、離脱検知） |
+| gphoto2 CLI の呼び出し | **実バイナリで検証済み**（検出失敗時のエラー翻訳まで） |
 | PTP/IP パケット層・オペレーション層 | 単体テスト済み（分割受信・往復変換・DeviceInfo 解析） |
 | Claude リクエストの組み立て | SDK クライアントを差し替えて検証済み（実 API 呼び出しは未実施） |
 | ブリッジサーバ | モックカメラでの結合テスト済み |
-| **実機 X100VI との通信** | **未検証。** 独自プロパティのコードは実機で確認が必要 |
+| **実機 X100VI との USB 通信** | **未検証。** `npm run probe` が最初の確認手段 |
+| Wi-Fi (`ptpip`) 経路 | **未完成。** イベントチャンネルの確立を実装していないため接続できない |

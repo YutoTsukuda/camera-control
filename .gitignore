@@ -4,3 +4,8 @@ dist/
 *.log
 .DS_Store
 captures/
+
+# 実機から生成される調査結果（機体固有・環境固有なので共有しない）
+config/gphoto2-mapping.json
+config/gphoto2-mapping-raw.txt
+config/fuji-properties.json

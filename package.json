@@ -13,7 +13,8 @@
     "dev": "npm run build && node dist/src/index.js",
     "test": "npm run build && node --test dist/test/*.test.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "discover": "npm run build && node dist/src/tools/discover.js"
+    "discover": "npm run build && node dist/src/tools/discover.js",
+    "probe": "npm run build && node dist/src/tools/probe.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",

@@ -32,7 +32,7 @@ function bool(env: Env, name: string, fallback: boolean): boolean {
   return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase());
 }
 
-export type TransportName = 'mock' | 'ptpip' | 'sdk-bridge';
+export type TransportName = 'mock' | 'gphoto2' | 'ptpip' | 'sdk-bridge';
 
 export interface AppConfig {
   host: string;
@@ -51,6 +51,16 @@ export interface AppConfig {
     propertyOverridePath: string;
     sdkBridgeUrl: string;
     friendlyName: string;
+    gphoto2: {
+      binary: string;
+      /** `usb:001,005`。カメラを複数繋ぐ場合のみ指定する。 */
+      port: string;
+      /** 解決済みマッピングの保存先。 */
+      mappingPath: string;
+      /** 保存済みマッピングを無視して毎回実機から解決し直す。 */
+      alwaysRescan: boolean;
+      timeoutMs: number;
+    };
   };
 
   ai: {
@@ -75,7 +85,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     ...(accessToken ? { accessToken } : {}),
 
     camera: {
-      transport: ['mock', 'ptpip', 'sdk-bridge'].includes(transport) ? transport : 'mock',
+      transport: ['mock', 'gphoto2', 'ptpip', 'sdk-bridge'].includes(transport)
+        ? transport
+        : 'mock',
       host: str(env, 'CAMERA_HOST', '192.168.0.1'),
       port: num(env, 'CAMERA_PORT', 55740),
       dryRun: bool(env, 'CAMERA_DRY_RUN', false),
@@ -87,6 +99,17 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       ),
       sdkBridgeUrl: str(env, 'SDK_BRIDGE_URL', 'http://127.0.0.1:8787'),
       friendlyName: str(env, 'CAMERA_CLIENT_NAME', 'X100VI-AI-Assistant'),
+      gphoto2: {
+        binary: str(env, 'GPHOTO2_BINARY', 'gphoto2'),
+        port: str(env, 'GPHOTO2_PORT', ''),
+        mappingPath: str(
+          env,
+          'GPHOTO2_MAPPING',
+          path.join(PROJECT_ROOT, 'config', 'gphoto2-mapping.json'),
+        ),
+        alwaysRescan: bool(env, 'GPHOTO2_RESCAN', false),
+        timeoutMs: num(env, 'GPHOTO2_TIMEOUT_MS', 20_000),
+      },
     },
 
     ai: {

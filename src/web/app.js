@@ -185,10 +185,20 @@ function escapeHtml(value) {
 
 // --- カメラ状態 -----------------------------------------------------------
 
+let lastConnected = null;
+
 async function refreshStatus() {
   try {
     const status = await api('/api/camera/status');
     const badge = $('statusBadge');
+
+    // 撮影中にケーブルが抜けた・カメラがスリープした場合に気づけるよう、
+    // 接続 → 切断へ落ちた瞬間だけ理由つきで知らせる。
+    if (lastConnected === true && status.connected === false) {
+      toast(status.lastError ?? 'カメラとの接続が切れました。');
+    }
+    lastConnected = status.connected;
+    badge.title = status.lastError ?? '';
     badge.textContent = status.connected
       ? `${status.model ?? '接続中'}${status.batteryPercent != null ? ` ・ ${status.batteryPercent}%` : ''}`
       : '未接続';
