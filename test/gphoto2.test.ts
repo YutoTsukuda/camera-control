@@ -7,6 +7,7 @@ import {
   parseExposureCompensation,
   parseIso,
   parseShutterSeconds,
+  parseSignedNumber,
 } from '../src/camera/gphoto2/parse.js';
 import { encodeSet, resolveMapping } from '../src/camera/gphoto2/mapping.js';
 import { explainGphoto2Error } from '../src/camera/gphoto2/cli.js';
@@ -29,7 +30,7 @@ const need = (field: string): ResolvedField => {
 
 describe('gphoto2 設定ツリーのパース', () => {
   it('END 区切りが無い版（2.5.28系）を読める', () => {
-    assert.equal(entries.length, 12);
+    assert.equal(entries.length, 18);
     const aperture = entries.find((e) => e.name === 'f-number');
     assert.equal(aperture?.path, '/main/capturesettings/f-number');
     assert.equal(aperture?.label, 'F-Number');
@@ -93,6 +94,70 @@ describe('選択肢の数値解釈', () => {
     assert.equal(parseExposureCompensation('0'), 0);
     assert.equal(parseExposureCompensation('+2'), 2);
     assert.equal(parseExposureCompensation('-0.3'), -0.3);
+  });
+});
+
+describe('符号つき数値の解釈', () => {
+  it('トーンカーブやWBシフトの表記を読む', () => {
+    assert.equal(parseSignedNumber('+1'), 1);
+    assert.equal(parseSignedNumber('-2'), -2);
+    assert.equal(parseSignedNumber('0'), 0);
+    assert.equal(parseSignedNumber('±0'), 0);
+    assert.equal(parseSignedNumber('+0.5'), 0.5);
+    assert.equal(parseSignedNumber('Auto'), undefined);
+    assert.equal(parseSignedNumber('Off'), undefined);
+  });
+});
+
+describe('光の調整と色のバランス', () => {
+  it('ハイライト/シャドウトーンを解決する', () => {
+    assert.equal(need('highlightTone').path, '/main/capturesettings/highlighttone');
+    assert.equal(need('shadowTone').path, '/main/capturesettings/shadowtone');
+  });
+
+  it('選択肢つきのトーンは最も近い値へ丸める', () => {
+    const result = encodeSet(need('highlightTone'), -0.7);
+    assert.ok('set' in result);
+    assert.equal(result.set.display, '-0.5');
+  });
+
+  it('カメラに無い刻みは持っている刻みへ落ちる', () => {
+    // shadowtone は 1 刻みしか持たないフィクスチャ
+    const result = encodeSet(need('shadowTone'), -1.4);
+    assert.ok('set' in result);
+    assert.equal(result.set.display, '-1');
+  });
+
+  it('RANGE型は範囲と刻みに合わせて丸める', () => {
+    const sharpness = need('sharpness');
+    assert.deepEqual(sharpness.range, { bottom: -4, top: 4, step: 1 });
+
+    const inRange = encodeSet(sharpness, 2.4);
+    assert.ok('set' in inRange);
+    assert.equal(inRange.set.value, '2');
+
+    const overshoot = encodeSet(sharpness, 99);
+    assert.ok('set' in overshoot);
+    assert.equal(overshoot.set.value, '4', '範囲外の値は上限で止めるべき');
+  });
+
+  it('WBシフト（RGBバランス）の2軸を解決する', () => {
+    assert.equal(need('wbShiftRed').path, '/main/imgsettings/whitebalanceadjusta');
+    assert.equal(need('wbShiftBlue').path, '/main/imgsettings/whitebalanceadjustb');
+
+    const red = encodeSet(need('wbShiftRed'), 3);
+    assert.ok('set' in red);
+    assert.equal(red.set.value, '3');
+
+    const clamped = encodeSet(need('wbShiftBlue'), -20);
+    assert.ok('set' in clamped);
+    assert.equal(clamped.set.value, '-9', 'WBシフトは -9 が下限');
+  });
+
+  it('色温度は100K刻みに丸める', () => {
+    const result = encodeSet(need('whiteBalanceKelvin'), 5432);
+    assert.ok('set' in result);
+    assert.equal(result.set.value, '5400');
   });
 });
 

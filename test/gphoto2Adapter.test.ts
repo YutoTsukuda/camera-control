@@ -154,6 +154,39 @@ describe('gphoto2 アダプタ', () => {
     assert.deepEqual(runner.setArgs(), ['/main/capturesettings/f-number=7']);
   });
 
+  it('光の調整とWBシフトを実際にカメラへ送る', async () => {
+    const runner = new FakeRunner();
+    const { camera } = await connectCamera(runner);
+    runner.calls = [];
+
+    const result = await camera.applySettings({
+      highlightTone: -1,
+      shadowTone: -1,
+      sharpness: 2,
+      wbShiftRed: 3,
+      wbShiftBlue: -2,
+      whiteBalanceKelvin: 5400,
+    });
+
+    assert.equal(result.ok, true, JSON.stringify(result.outcomes));
+    const sent = runner.setArgs();
+    // 選択肢を持つトーンはインデックス指定、RANGE は値指定になる
+    assert.ok(sent.includes('/main/capturesettings/highlighttone=2'), sent.join(' '));
+    assert.ok(sent.includes('/main/capturesettings/shadowtone=1'), sent.join(' '));
+    assert.ok(sent.includes('/main/capturesettings/sharpness=2'), sent.join(' '));
+    assert.ok(sent.includes('/main/imgsettings/whitebalanceadjusta=3'), sent.join(' '));
+    assert.ok(sent.includes('/main/imgsettings/whitebalanceadjustb=-2'), sent.join(' '));
+    assert.ok(sent.includes('/main/imgsettings/colortemperature=5400'), sent.join(' '));
+  });
+
+  it('トーンの現在値を読み戻せる', async () => {
+    const runner = new FakeRunner();
+    runner.currentValues = { '/main/capturesettings/highlighttone': '-1' };
+    const { camera } = await connectCamera(runner);
+    const status = await camera.getStatus();
+    assert.equal(status.current?.highlightTone, -1);
+  });
+
   it('未接続での適用は例外にする', async () => {
     const camera = new Gphoto2Camera({ runner: new FakeRunner() });
     await assert.rejects(() => camera.applySettings({ aperture: 2.8 }), /接続されていません/);

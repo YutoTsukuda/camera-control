@@ -286,6 +286,10 @@ export class Gphoto2Camera implements CameraAdapter {
       'exposureMode',
       'filmSimulation',
       'whiteBalance',
+      'highlightTone',
+      'shadowTone',
+      'wbShiftRed',
+      'wbShiftBlue',
     ];
     const paths = wanted
       .map((field) => this.mapping.get(field))
@@ -338,6 +342,15 @@ export class Gphoto2Camera implements CameraAdapter {
       case 'expcomp':
         if (typeof matched?.parsed === 'number') settings.exposureCompensation = matched.parsed;
         break;
+      case 'number': {
+        // 選択肢がある場合は照合した値、RANGE の場合は現在値をそのまま数値化する。
+        const numeric =
+          typeof matched?.parsed === 'number' ? matched.parsed : Number(current);
+        if (Number.isFinite(numeric)) {
+          (settings as Record<string, unknown>)[resolved.field] = numeric;
+        }
+        break;
+      }
       case 'enum': {
         if (!matched || !resolved.valueMap) break;
         const domainValue = Object.entries(resolved.valueMap).find(

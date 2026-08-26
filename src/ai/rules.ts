@@ -108,6 +108,12 @@ export function adviseByRules(input: AdvisorInput): Advice {
 
   const highContrast = contrast >= 0.6 || backlit;
 
+  // 光源が分かっている場合だけ、控えめに色を戻す。
+  // 確信が無いときに振ると過補正が残るので、既定は 0 のまま。
+  const lightSource = scene.lightSource;
+  const wbShiftRed =
+    lightSource === 'SHADE' || lightSource === 'CLOUDY' ? 1 : 0;
+
   const warnings: string[] = [
     'AIによる提案が利用できないため、ルールベースの標準設定を返しています。',
   ];
@@ -137,7 +143,7 @@ export function adviseByRules(input: AdvisorInput): Advice {
       filmSimulation,
       whiteBalance: 'AUTO',
       whiteBalanceKelvin: null,
-      wbShiftRed: 0,
+      wbShiftRed,
       wbShiftBlue: 0,
       dynamicRange: highContrast ? 'DR200' : 'DR100',
       highlightTone: highContrast ? -1 : 0,

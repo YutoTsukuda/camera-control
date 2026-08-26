@@ -18,12 +18,21 @@ import {
   parseExposureCompensation,
   parseIso,
   parseShutterSeconds,
+  parseSignedNumber,
   type ConfigEntry,
 } from './parse.js';
 import type { ShootingSettings } from '../../domain/types.js';
 
 /** 値の性質。照合アルゴリズムを決める。 */
-export type FieldKind = 'aperture' | 'shutter' | 'iso' | 'expcomp' | 'enum' | 'toggle';
+export type FieldKind =
+  | 'aperture'
+  | 'shutter'
+  | 'iso'
+  | 'expcomp'
+  /** 単位を持たない符号つき数値。トーンカーブ・WBシフト・シャープネスなど。 */
+  | 'number'
+  | 'enum'
+  | 'toggle';
 
 interface FieldSpec {
   kind: FieldKind;
@@ -172,6 +181,101 @@ export const FIELD_SPECS: Partial<Record<keyof ShootingSettings, FieldSpec>> = {
     candidates: ['ndfilter', 'neutraldensity'],
     synonyms: { OFF: ['off'], ON: ['on'] },
   },
+
+  // --- 光の調整（トーンカーブ）------------------------------------------
+  // X100VI のハイライト/シャドウトーンは -2〜+4（0.5刻み）。
+  // マイナスほど軟調（白飛び・黒潰れを避ける）、プラスほど硬調。
+  highlightTone: {
+    kind: 'number',
+    candidates: ['highlighttone', 'highlight', 'highlighttonecurve', 'd08d'],
+  },
+  shadowTone: {
+    kind: 'number',
+    candidates: ['shadowtone', 'shadow', 'shadowtonecurve', 'd08e'],
+  },
+  clarity: { kind: 'number', candidates: ['clarity'] },
+  sharpness: { kind: 'number', candidates: ['sharpness', 'sharpening'] },
+  noiseReduction: {
+    kind: 'number',
+    candidates: ['noisereduction', 'highisonoisereduction', 'nrsetting'],
+  },
+  color: { kind: 'number', candidates: ['color', 'saturation', 'colorsaturation'] },
+
+  // --- 色のバランス -------------------------------------------------------
+  // X100VI の「RGBバランス」に当たるのは WBシフト。
+  // 赤-シアン軸と青-黄軸の 2 軸で、それぞれ -9〜+9。
+  // R/G/B を独立に持ち上げる機構はカメラ側に無い。
+  wbShiftRed: {
+    kind: 'number',
+    candidates: ['whitebalanceadjusta', 'wbshiftra', 'colorshiftred', 'whitebalanceadjustred'],
+  },
+  wbShiftBlue: {
+    kind: 'number',
+    candidates: ['whitebalanceadjustb', 'wbshiftbb', 'colorshiftblue', 'whitebalanceadjustblue'],
+  },
+  whiteBalanceKelvin: {
+    kind: 'number',
+    candidates: ['colortemperature', 'whitebalancecolortemperature', 'colortemp'],
+  },
+
+  // --- その他の絵作り -----------------------------------------------------
+  grainEffect: {
+    kind: 'enum',
+    candidates: ['graineffect', 'grain', 'grainroughness'],
+    synonyms: {
+      OFF: ['off'],
+      WEAK_SMALL: ['weaksmall', 'weakssmall'],
+      WEAK_LARGE: ['weaklarge'],
+      STRONG_SMALL: ['strongsmall'],
+      STRONG_LARGE: ['stronglarge'],
+    },
+  },
+  dRangePriority: {
+    kind: 'enum',
+    candidates: ['drangepriority', 'dynamicrangepriority', 'drpriority'],
+    synonyms: { OFF: ['off'], AUTO: ['auto'], WEAK: ['weak'], STRONG: ['strong'] },
+  },
+
+  // --- 撮影操作 -----------------------------------------------------------
+  afArea: {
+    kind: 'enum',
+    candidates: ['afmode', 'focusarea', 'afareamode', 'aemode'],
+    synonyms: {
+      SINGLE_POINT: ['singlepoint', 'single', 'spot'],
+      ZONE: ['zone'],
+      WIDE_TRACKING: ['widetracking', 'wide', 'tracking', 'all'],
+    },
+  },
+  subjectDetection: {
+    kind: 'enum',
+    candidates: ['subjectdetection', 'facedetection', 'subjectrecognition'],
+    synonyms: {
+      OFF: ['off'],
+      FACE_EYE: ['faceeye', 'face', 'eye', 'faceon'],
+      ANIMAL: ['animal'],
+      BIRD: ['bird'],
+      CAR: ['car', 'automobile'],
+      BIKE: ['bike', 'motorcycle', 'bicycle'],
+      AIRPLANE: ['airplane', 'aeroplane', 'plane'],
+      TRAIN: ['train'],
+    },
+  },
+  digitalTeleconverter: {
+    kind: 'enum',
+    candidates: ['digitalteleconverter', 'digitalzoom', 'teleconverter'],
+    synonyms: {
+      OFF: ['off', '35mm'],
+      X1_4: ['50mm', 'x14', '14x'],
+      X2_0: ['70mm', 'x20', '2x', '20x'],
+    },
+  },
+
+  // --- ISOオートの枠 ------------------------------------------------------
+  isoAutoMax: { kind: 'iso', candidates: ['isoautomax', 'isoautohigh', 'autoisomax'] },
+  isoAutoMinShutterSec: {
+    kind: 'shutter',
+    candidates: ['isoautominshutter', 'autoisominshutterspeed', 'minshutterspeed'],
+  },
 };
 
 export interface ResolvedField {
@@ -207,6 +311,8 @@ function parseChoice(kind: FieldKind, value: string): number | 'AUTO' | undefine
       return parseIso(value);
     case 'expcomp':
       return parseExposureCompensation(value);
+    case 'number':
+      return parseSignedNumber(value);
     default:
       return undefined;
   }
@@ -383,6 +489,30 @@ export function encodeSet(
       return { set: { path, index: nearest.index, display: nearest.value } };
     }
     // 選択肢を持たない RANGE/TEXT widget の場合は値をそのまま渡す
+    return { set: { path, value: String(value), display: String(value) } };
+  }
+
+  if (kind === 'number') {
+    if (typeof value !== 'number') return { reason: `値が数値ではありません: ${String(value)}` };
+
+    if (choices.length > 0) {
+      const nearest = nearestLinear(value, choices);
+      if (!nearest) {
+        return { reason: 'この設定の選択肢を数値として解釈できませんでした。' };
+      }
+      return { set: { path, index: nearest.index, display: nearest.value } };
+    }
+
+    // 選択肢を持たない RANGE widget は、カメラが申告した範囲と刻みに合わせる。
+    // 範囲外の値を投げるとカメラが黙って別の値になることがあるため、ここで必ず丸める。
+    if (resolved.range) {
+      const { bottom, top, step } = resolved.range;
+      const stepped = step > 0 ? Math.round(value / step) * step : value;
+      const clamped = Math.min(top, Math.max(bottom, stepped));
+      const rounded = Math.round(clamped * 1000) / 1000;
+      return { set: { path, value: String(rounded), display: String(rounded) } };
+    }
+
     return { set: { path, value: String(value), display: String(value) } };
   }
 

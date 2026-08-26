@@ -152,6 +152,65 @@ Choice: 16 Monochrome+Ye
 Choice: 17 Monochrome+R
 Choice: 18 Monochrome+G
 Choice: 19 Sepia
+/main/capturesettings/highlighttone
+Label: Highlight Tone
+Readonly: 0
+Type: RADIO
+Current: 0
+Choice: 0 -2
+Choice: 1 -1.5
+Choice: 2 -1
+Choice: 3 -0.5
+Choice: 4 0
+Choice: 5 +0.5
+Choice: 6 +1
+Choice: 7 +2
+Choice: 8 +3
+Choice: 9 +4
+/main/capturesettings/shadowtone
+Label: Shadow Tone
+Readonly: 0
+Type: RADIO
+Current: 0
+Choice: 0 -2
+Choice: 1 -1
+Choice: 2 0
+Choice: 3 +1
+Choice: 4 +2
+Choice: 5 +3
+Choice: 6 +4
+/main/capturesettings/sharpness
+Label: Sharpness
+Readonly: 0
+Type: RANGE
+Current: 0
+Bottom: -4
+Top: 4
+Step: 1
+/main/imgsettings/whitebalanceadjusta
+Label: White Balance Adjust A
+Readonly: 0
+Type: RANGE
+Current: 0
+Bottom: -9
+Top: 9
+Step: 1
+/main/imgsettings/whitebalanceadjustb
+Label: White Balance Adjust B
+Readonly: 0
+Type: RANGE
+Current: 0
+Bottom: -9
+Top: 9
+Step: 1
+/main/imgsettings/colortemperature
+Label: Color Temperature
+Readonly: 0
+Type: RANGE
+Current: 5500
+Bottom: 2500
+Top: 10000
+Step: 100
 /main/other/d001
 Label: PTP Property 0xd001
 Readonly: 0

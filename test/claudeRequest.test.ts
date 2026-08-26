@@ -156,3 +156,25 @@ describe('構造化出力の耐性', () => {
     );
   });
 });
+
+describe('光と色のプロンプト', () => {
+  it('トーンカーブの向き（マイナスが軟調）を明示している', () => {
+    assert.match(SYSTEM_PROMPT, /ハイライトトーン/);
+    assert.match(SYSTEM_PROMPT, /マイナスが軟調/);
+    assert.match(SYSTEM_PROMPT, /シャドウトーン マイナス/);
+  });
+
+  it('WBシフトの2軸の向きを明示している', () => {
+    assert.match(SYSTEM_PROMPT, /wbShiftRed: プラスで赤方向/);
+    assert.match(SYSTEM_PROMPT, /wbShiftBlue: プラスで青方向/);
+    assert.match(SYSTEM_PROMPT, /マゼンタ方向/);
+  });
+
+  it('R/G/Bを独立に動かせないことを伝えている（存在しない操作を提案させない）', () => {
+    assert.match(SYSTEM_PROMPT, /R\/G\/B を独立に上げ下げする機構は無い/);
+  });
+
+  it('トーンカーブとダイナミックレンジ設定を混同させない', () => {
+    assert.match(SYSTEM_PROMPT, /トーンカーブは階調の性格を、DR は救える範囲を変える/);
+  });
+});

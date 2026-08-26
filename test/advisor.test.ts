@@ -183,3 +183,30 @@ describe('三脚の扱い', () => {
     );
   });
 });
+
+describe('光と色の調整', () => {
+  it('輝度差が大きいシーンではトーンを軟調に振る', () => {
+    const input = { scene: { ev100: 14, backlit: true } };
+    const proposal = composeProposal(adviseByRules(input), input, 'rules');
+    assert.ok((proposal.settings.highlightTone as number) < 0, 'ハイライトを粘らせるべき');
+    assert.ok((proposal.settings.shadowTone as number) < 0, '暗部を持ち上げるべき');
+  });
+
+  it('平坦なシーンではトーンを触らない', () => {
+    const input = { scene: { ev100: 12, contrast: 0.2, backlit: false } };
+    const proposal = composeProposal(adviseByRules(input), input, 'rules');
+    assert.equal(proposal.settings.highlightTone, 0);
+    assert.equal(proposal.settings.shadowTone, 0);
+  });
+
+  it('日陰・曇天の青かぶりだけ控えめに戻す', () => {
+    const shade = { scene: { ev100: 12, lightSource: 'SHADE' as const } };
+    const unknown = { scene: { ev100: 12 } };
+    assert.equal(composeProposal(adviseByRules(shade), shade, 'rules').settings.wbShiftRed, 1);
+    assert.equal(
+      composeProposal(adviseByRules(unknown), unknown, 'rules').settings.wbShiftRed,
+      0,
+      '光源が不明なときは振らない',
+    );
+  });
+});

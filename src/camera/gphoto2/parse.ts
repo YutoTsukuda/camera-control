@@ -194,6 +194,21 @@ export function parseExposureCompensation(value: string): number | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+/**
+ * "+1" / "-2" / "0" / "±0" / "+0.5" / "0.5 stop" → 数値
+ *
+ * トーンカーブや WBシフトのような、単位を持たない符号つき数値の選択肢に使う。
+ * 「Auto」など数値でないものは undefined を返し、照合対象から外す。
+ */
+export function parseSignedNumber(value: string): number | undefined {
+  const text = value.trim().replace(/^±/, '+');
+  if (/^(auto|off|none)$/i.test(text)) return undefined;
+  const match = /([+-]?\d+(?:\.\d+)?)/.exec(text);
+  if (!match) return undefined;
+  const parsed = Number(match[1]);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 /** 照合用の正規化: 小文字化し、英数字以外を削る。 */
 export function normalize(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]/g, '');
