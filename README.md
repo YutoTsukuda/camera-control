@@ -82,7 +82,8 @@ systemctl --user stop gvfs-gphoto2-volume-monitor
 
 # カメラ側: 接続設定 → USB接続モード → USB テザー撮影
 # USBで繋いだ状態で、まず実機を調べる
-npm run probe
+npm run probe      # カメラが何を公開しているか
+npm run doctor     # 設計の前提が成り立つか健診する
 
 # 照合結果を確認したら起動
 CAMERA_TRANSPORT=gphoto2 npm start
@@ -93,8 +94,12 @@ CAMERA_TRANSPORT=gphoto2 npm start
 1 件ずつ表示して `config/gphoto2-mapping.json` に保存します。
 **実機運用は必ずここから始めてください。**
 
+`npm run doctor` は「複数項目を1プロセスでまとめて書き込めるか」のような、
+実機でしか確かめられない設計の前提を確認します（現在値と同じ値を書き戻すだけなので設定は変わりません）。
+
 手順の詳細（権限、systemd での常駐、物理ダイヤルの制約、Windows での動かし方）は
-**[docs/usb-setup.md](docs/usb-setup.md)** にまとめています。
+**[docs/usb-setup.md](docs/usb-setup.md)**、
+確認事項の全体像は **[docs/verification.md](docs/verification.md)** にまとめています。
 
 > **X100VI が libgphoto2 の機種一覧に無くても動きます。**
 > `USB PTP Class Camera` という汎用エントリがあり、PTP クラスを名乗るカメラは
@@ -161,6 +166,7 @@ src/
 ```
 
 - [docs/usb-setup.md](docs/usb-setup.md) — **USB接続での実機セットアップ（推奨経路）**
+- [docs/verification.md](docs/verification.md) — **実機での確認事項と確認手段**
 - [docs/architecture.md](docs/architecture.md) — 設計の意図と責務分担
 - [docs/hardware-setup.md](docs/hardware-setup.md) — ネットワーク構成と Wi-Fi 経路
 - [docs/protocol-notes.md](docs/protocol-notes.md) — PTP/IP と独自プロパティの確度
@@ -206,5 +212,5 @@ src/
 | PTP/IP パケット層・オペレーション層 | 単体テスト済み（分割受信・往復変換・DeviceInfo 解析） |
 | Claude リクエストの組み立て | SDK クライアントを差し替えて検証済み（実 API 呼び出しは未実施） |
 | ブリッジサーバ | モックカメラでの結合テスト済み |
-| **実機 X100VI との USB 通信** | **未検証。** `npm run probe` が最初の確認手段 |
+| **実機 X100VI との USB 通信** | **未検証。** `npm run probe` → `npm run doctor` が確認手段（[verification.md](docs/verification.md)） |
 | Wi-Fi (`ptpip`) 経路 | **未完成。** イベントチャンネルの確立を実装していないため接続できない |
